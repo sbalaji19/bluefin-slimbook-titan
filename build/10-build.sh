@@ -91,20 +91,8 @@ echo "::endgroup::"
 
 echo "::group:: Icon Themes"
 
-# Papirus — installed first as the fallback (10,000+ app icons, best coverage)
-dnf install -y papirus-icon-theme
-
-# Reversal icon theme — rounded square icons, light + dark variants
-# https://github.com/yeyushengfan258/Reversal-icon-theme
-git clone --depth=1 https://github.com/yeyushengfan258/Reversal-icon-theme /tmp/Reversal-icon-theme
-bash /tmp/Reversal-icon-theme/install.sh -d /usr/share/icons
-rm -rf /tmp/Reversal-icon-theme
-
-# Patch all Reversal variants to fall back to Papirus then hicolor
-# This ensures ANY app without a Reversal icon gets a uniform Papirus square icon
-for index_theme in /usr/share/icons/Reversal*/index.theme; do
-    sed -i 's/^Inherits=.*/Inherits=Papirus,hicolor/' "${index_theme}"
-done
+# Papirus + Papirus-Dark — 10,000+ uniform square icons, best app coverage
+dnf install -y papirus-icon-theme papirus-icon-theme-dark
 
 # Install custom GNOME Shell theme (uniform rounded-square icon CSS)
 mkdir -p /usr/share/themes/SlimbookTitan/gnome-shell
@@ -120,16 +108,16 @@ system-db:local
 EOF
 cat > /etc/dconf/db/local.d/01-icon-theme <<EOF
 [org/gnome/desktop/interface]
-icon-theme='Reversal-dark'
+icon-theme='Papirus-Dark'
 
 [org/gnome/shell/extensions/user-theme]
 name='SlimbookTitan'
 EOF
 dconf update
 
-# Rebuild icon cache for all affected themes
-gtk-update-icon-cache -f /usr/share/icons/Reversal* 2>/dev/null || true
+# Rebuild icon cache
 gtk-update-icon-cache -f /usr/share/icons/Papirus 2>/dev/null || true
+gtk-update-icon-cache -f /usr/share/icons/Papirus-Dark 2>/dev/null || true
 gtk-update-icon-cache -f /usr/share/icons/hicolor 2>/dev/null || true
 
 echo "::endgroup::"
