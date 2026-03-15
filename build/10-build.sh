@@ -208,7 +208,9 @@ echo "::group:: System Configuration"
 
 # Enable/disable systemd services
 systemctl enable podman.socket
-systemctl enable slimbook.service
+
+# Enable Slimbook service if it exists (name varies by package version)
+systemctl enable slimbook-service.service
 
 # GRUB theme apply service
 # - Copies theme files from /usr/share (rootfs) to /boot (boot partition, readable by GRUB)
