@@ -52,7 +52,8 @@ dnf install -y \
     python3-pip
 
 # ite8291r3-ctl — userspace RGB control for ITE 8291 keyboard (048d:6004)
-pip3 install ite8291r3-ctl
+# --prefix=/usr installs to /usr/lib/python3.x/site-packages and /usr/bin/
+pip3 install --prefix=/usr ite8291r3-ctl
 
 echo "::endgroup::"
 
