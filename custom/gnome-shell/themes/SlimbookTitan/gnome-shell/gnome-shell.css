@@ -1,23 +1,23 @@
 /* SlimbookTitan GNOME Shell Theme
- * Inherits default GNOME Shell theme, enforces uniform icons,
- * and adapts top bar / dash to light or dark color scheme.
+ * Extends the default GNOME Shell theme with uniform icons and styled panel/dash.
+ * NOTE: GNOME Shell uses the St toolkit — @media prefers-color-scheme is NOT supported.
+ * This theme uses dark styling by default (matches Bluefin's default dark mode).
  */
 @import url("resource:///org/gnome/shell/theme/gnome-shell.css");
 
 /* ============================================================
- * UNIFORM ICON SHAPE — Rounded Square (iOS/Android style)
+ * UNIFORM ICON SHAPE — Rounded Square (border-radius: 16px)
+ * Change to 0px=square, 8px=subtle, 22px=more rounded, 50%=circle
  * ============================================================ */
 
 .icon-grid .overview-icon,
-.icon-grid .overview-icon .app-well-app,
 .app-grid-icon {
   border-radius: 16px;
   padding: 3px;
 }
 
 .dash-item-container .overview-icon,
-.app-folder .overview-icon,
-.app-well-app:running > .overview-icon > StWidget {
+.app-folder .overview-icon {
   border-radius: 16px;
 }
 
@@ -31,139 +31,69 @@
 }
 
 /* ============================================================
- * LIGHT THEME — white top bar, white dash
- * Activated when GNOME color-scheme = default (light)
+ * TOP BAR — dark styling
  * ============================================================ */
-@media (prefers-color-scheme: light) {
-  /* Top bar */
-  #panel {
-    background-color: rgba(255, 255, 255, 0.90);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.10);
-    color: #2e2e2e;
-  }
 
-  #panel .panel-button {
-    color: #2e2e2e;
-    -natural-hpadding: 12px;
-  }
+#panel {
+  background-color: rgba(28, 28, 28, 0.90);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: #e8e8e8;
+}
 
-  #panel .panel-button:hover,
-  #panel .panel-button:focus {
-    background-color: rgba(0, 0, 0, 0.08);
-    color: #1a1a1a;
-  }
+#panel .panel-button {
+  color: #e8e8e8;
+  -natural-hpadding: 12px;
+}
 
-  #panel .panel-button:active,
-  #panel .panel-button:checked {
-    background-color: rgba(0, 0, 0, 0.14);
-    color: #1a1a1a;
-  }
+#panel .panel-button:hover,
+#panel .panel-button:focus {
+  background-color: rgba(255, 255, 255, 0.10);
+  color: #ffffff;
+}
 
-  /* Clock / date label */
-  .clock {
-    color: #2e2e2e;
-    font-weight: 500;
-  }
+#panel .panel-button:active,
+#panel .panel-button:checked {
+  background-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
 
-  /* System status icons */
-  .system-status-icon {
-    color: #2e2e2e;
-  }
+.clock {
+  color: #e8e8e8;
+  font-weight: 500;
+}
 
-  /* Dash background */
-  .dash-background {
-    background-color: rgba(255, 255, 255, 0.88);
-    border: 1px solid rgba(0, 0, 0, 0.10);
-    border-radius: 16px;
-  }
-
-  /* Quick settings / notification panel */
-  .quick-settings,
-  .message-list {
-    background-color: rgba(250, 250, 250, 0.97);
-    color: #2e2e2e;
-    border: 1px solid rgba(0, 0, 0, 0.10);
-  }
-
-  /* Overview search bar */
-  .search-entry {
-    background-color: rgba(255, 255, 255, 0.90);
-    color: #2e2e2e;
-    border: 1px solid rgba(0, 0, 0, 0.15);
-  }
-
-  /* App folder popup */
-  .app-folder-popup {
-    background-color: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(0, 0, 0, 0.10);
-  }
+.system-status-icon {
+  color: #e8e8e8;
 }
 
 /* ============================================================
- * DARK THEME — dark top bar, dark dash
- * Activated when GNOME color-scheme = prefer-dark
+ * DASH — dark styling
  * ============================================================ */
-@media (prefers-color-scheme: dark) {
-  /* Top bar */
-  #panel {
-    background-color: rgba(28, 28, 28, 0.90);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    color: #e8e8e8;
-  }
 
-  #panel .panel-button {
-    color: #e8e8e8;
-    -natural-hpadding: 12px;
-  }
+.dash-background {
+  background-color: rgba(28, 28, 28, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+}
 
-  #panel .panel-button:hover,
-  #panel .panel-button:focus {
-    background-color: rgba(255, 255, 255, 0.10);
-    color: #ffffff;
-  }
+/* ============================================================
+ * QUICK SETTINGS / NOTIFICATIONS — dark styling
+ * ============================================================ */
 
-  #panel .panel-button:active,
-  #panel .panel-button:checked {
-    background-color: rgba(255, 255, 255, 0.16);
-    color: #ffffff;
-  }
+.quick-settings,
+.message-list {
+  background-color: rgba(32, 32, 32, 0.97);
+  color: #e8e8e8;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
 
-  /* Clock / date label */
-  .clock {
-    color: #e8e8e8;
-    font-weight: 500;
-  }
+.search-entry {
+  background-color: rgba(40, 40, 40, 0.90);
+  color: #e8e8e8;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
 
-  /* System status icons */
-  .system-status-icon {
-    color: #e8e8e8;
-  }
-
-  /* Dash background */
-  .dash-background {
-    background-color: rgba(28, 28, 28, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 16px;
-  }
-
-  /* Quick settings / notification panel */
-  .quick-settings,
-  .message-list {
-    background-color: rgba(32, 32, 32, 0.97);
-    color: #e8e8e8;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  /* Overview search bar */
-  .search-entry {
-    background-color: rgba(40, 40, 40, 0.90);
-    color: #e8e8e8;
-    border: 1px solid rgba(255, 255, 255, 0.10);
-  }
-
-  /* App folder popup */
-  .app-folder-popup {
-    background-color: rgba(38, 38, 38, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
+.app-folder-popup {
+  background-color: rgba(38, 38, 38, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }

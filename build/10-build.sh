@@ -208,6 +208,7 @@ echo "::group:: System Configuration"
 
 # Enable/disable systemd services
 systemctl enable podman.socket
+systemctl enable slimbook.service
 
 # GRUB theme apply service
 # - Copies theme files from /usr/share (rootfs) to /boot (boot partition, readable by GRUB)
@@ -225,6 +226,7 @@ RemainAfterExit=yes
 ExecStart=/bin/bash -c '\
   mkdir -p /boot/grub2/themes && \
   cp -r /usr/share/grub/themes/slimbook /boot/grub2/themes/slimbook && \
+  touch /etc/default/grub && \
   sed -i "/^GRUB_THEME=/d" /etc/default/grub && \
   sed -i "/^GRUB_GFXMODE=/d" /etc/default/grub && \
   echo "GRUB_THEME=/boot/grub2/themes/slimbook/theme.txt" >> /etc/default/grub && \
