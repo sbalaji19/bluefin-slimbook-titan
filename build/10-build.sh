@@ -190,6 +190,17 @@ EOF
 
 echo "::endgroup::"
 
+echo "::group:: Kernel Module Auto-load"
+
+mkdir -p /etc/modules-load.d
+cat > /etc/modules-load.d/slimbook.conf <<'EOF'
+# Slimbook Titan kernel modules
+qc71_laptop
+yt6801
+EOF
+
+echo "::endgroup::"
+
 echo "::group:: System Configuration"
 
 # Enable/disable systemd services
