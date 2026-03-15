@@ -90,7 +90,6 @@ echo "::group:: Icon Themes"
 # https://github.com/yeyushengfan258/Reversal-icon-theme
 git clone --depth=1 https://github.com/yeyushengfan258/Reversal-icon-theme /tmp/Reversal-icon-theme
 bash /tmp/Reversal-icon-theme/install.sh -d /usr/share/icons
-bash /tmp/Reversal-icon-theme/install.sh -d /usr/share/icons -dark
 rm -rf /tmp/Reversal-icon-theme
 
 # Set Reversal-dark as the default icon theme system-wide via dconf profile
