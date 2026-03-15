@@ -58,7 +58,20 @@ dnf install -y --setopt=tsflags=noscripts \
     slimbook-qc71-kmod \
     slimbook-qc71-kmod-common \
     slimbook-yt6801-kmod \
-    slimbook-yt6801-kmod-common
+    slimbook-yt6801-kmod-common \
+    slimbook-ite8291-kmod \
+    slimbook-ite8291-kmod-common
+
+# Install Slimbook GUI applications (provides icons + desktop entries)
+dnf install -y \
+    slimbook-battery \
+    slimbook-face \
+    slimbook-one \
+    slimbook-rgb-keyboard || true
+
+# Rebuild icon/desktop caches manually — skipped by --setopt=tsflags=noscripts above
+gtk-update-icon-cache -f /usr/share/icons/hicolor/ || true
+update-desktop-database /usr/share/applications/ || true
 
 echo "::endgroup::"
 
