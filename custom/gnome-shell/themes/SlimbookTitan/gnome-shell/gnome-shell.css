@@ -1,0 +1,47 @@
+/* SlimbookTitan GNOME Shell Theme
+ * Inherits default GNOME Shell theme and enforces uniform rounded-square icons
+ */
+@import url("resource:///org/gnome/shell/theme/gnome-shell.css");
+
+/* ============================================================
+ * UNIFORM ICON SHAPE — Rounded Square (iOS/Android style)
+ * Applies to: App Grid, Dash, Overview, Folders
+ * ============================================================ */
+
+/* App grid icons */
+.icon-grid .overview-icon,
+.icon-grid .overview-icon .app-well-app,
+.app-grid-icon {
+  border-radius: 16px;
+  padding: 3px;
+}
+
+/* Dash/Dock icons */
+.dash-item-container .overview-icon {
+  border-radius: 16px;
+}
+
+/* Folder icons in app grid */
+.app-folder .overview-icon {
+  border-radius: 16px;
+}
+
+/* Running app indicators — keep them visible */
+.app-well-app:running > .overview-icon > StWidget {
+  border-radius: 16px;
+}
+
+/* ============================================================
+ * ICON PADDING — ensures all icons have equal whitespace
+ * ============================================================ */
+.overview-icon {
+  padding: 4px;
+}
+
+/* ============================================================
+ * APP GRID SPACING — clean uniform grid
+ * ============================================================ */
+.icon-grid {
+  spacing: 18px;
+  row-spacing: 18px;
+}

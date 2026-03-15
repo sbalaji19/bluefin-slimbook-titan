@@ -69,6 +69,7 @@ jobs:
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             ghcr.io/osbuild/bootc-image-builder:latest \
             --type anaconda-iso \
+            --rootfs btrfs \
             --config /config.toml \
             ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:stable
 

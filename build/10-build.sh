@@ -86,13 +86,27 @@ echo "::endgroup::"
 
 echo "::group:: Icon Themes"
 
+# Papirus — installed first as the fallback (10,000+ app icons, best coverage)
+dnf install -y papirus-icon-theme
+
 # Reversal icon theme — rounded square icons, light + dark variants
 # https://github.com/yeyushengfan258/Reversal-icon-theme
 git clone --depth=1 https://github.com/yeyushengfan258/Reversal-icon-theme /tmp/Reversal-icon-theme
 bash /tmp/Reversal-icon-theme/install.sh -d /usr/share/icons
 rm -rf /tmp/Reversal-icon-theme
 
-# Set Reversal-dark as the default icon theme system-wide via dconf profile
+# Patch all Reversal variants to fall back to Papirus then hicolor
+# This ensures ANY app without a Reversal icon gets a uniform Papirus square icon
+for index_theme in /usr/share/icons/Reversal*/index.theme; do
+    sed -i 's/^Inherits=.*/Inherits=Papirus,hicolor/' "${index_theme}"
+done
+
+# Install custom GNOME Shell theme (uniform rounded-square icon CSS)
+mkdir -p /usr/share/themes/SlimbookTitan/gnome-shell
+cp -r /ctx/custom/gnome-shell/themes/SlimbookTitan/gnome-shell/* \
+    /usr/share/themes/SlimbookTitan/gnome-shell/
+
+# Set icon theme + shell theme system-wide via dconf profile
 mkdir -p /etc/dconf/db/local.d /etc/dconf/profile
 cat > /etc/dconf/profile/user <<EOF
 user-db:user
@@ -101,8 +115,19 @@ EOF
 cat > /etc/dconf/db/local.d/01-icon-theme <<EOF
 [org/gnome/desktop/interface]
 icon-theme='Reversal-dark'
+
+[org/gnome/shell/extensions/user-theme]
+name='SlimbookTitan'
+
+[org/gnome/shell]
+enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com']
 EOF
 dconf update
+
+# Rebuild icon cache for all affected themes
+gtk-update-icon-cache -f /usr/share/icons/Reversal* 2>/dev/null || true
+gtk-update-icon-cache -f /usr/share/icons/Papirus 2>/dev/null || true
+gtk-update-icon-cache -f /usr/share/icons/hicolor 2>/dev/null || true
 
 echo "::endgroup::"
 
@@ -123,7 +148,25 @@ echo "::group:: System Configuration"
 
 # Enable/disable systemd services
 systemctl enable podman.socket
-# Example: systemctl mask unwanted-service
+
+# GRUB theme auto-apply service — runs grub2-mkconfig after every bootc deployment
+# This is needed because bootc does not re-run grub2-mkconfig after image switch/upgrade
+cat > /usr/lib/systemd/system/grub-theme-apply.service <<EOF
+[Unit]
+Description=Apply GRUB theme configuration
+After=local-fs.target
+ConditionPathExists=/etc/default/grub
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/grub2-mkconfig -o /boot/grub2/grub.cfg
+RemainAfterExit=yes
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl enable grub-theme-apply.service
 
 echo "::endgroup::"
 
