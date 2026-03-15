@@ -142,6 +142,54 @@ rm -f /tmp/${EXTENSION_UUID}.zip
 
 echo "::endgroup::"
 
+echo "::group:: Polkit Rules"
+
+# Allow wheel group users to control Slimbook services without password prompt
+mkdir -p /etc/polkit-1/rules.d
+cat > /etc/polkit-1/rules.d/49-slimbook-rgb.rules <<'EOF'
+polkit.addRule(function(action, subject) {
+    if ((action.id.indexOf("com.slimbook") === 0 ||
+         action.id.indexOf("org.freedesktop.color-manager") === 0) &&
+        subject.isInGroup("wheel")) {
+        return polkit.Result.YES;
+    }
+});
+EOF
+
+# Patch any slimbook polkit .policy files to not require password for active users
+for policy in /usr/share/polkit-1/actions/com.slimbook*.policy; do
+    [ -f "$policy" ] && \
+    sed -i 's|<allow_active>auth_admin</allow_active>|<allow_active>yes</allow_active>|g' "$policy" && \
+    sed -i 's|<allow_active>auth_admin_keep</allow_active>|<allow_active>yes</allow_active>|g' "$policy" || true
+done
+
+echo "::endgroup::"
+
+echo "::group:: Udev Rules — RGB Keyboard + Fan Control"
+
+mkdir -p /etc/udev/rules.d
+
+# ITE 8291 RGB keyboard controller (used in Slimbook Titan)
+# Allows users in the 'input' and 'wheel' groups to access the HID device directly
+# ITE USB vendor ID: 048d — common product IDs for keyboard RGB controllers
+cat > /etc/udev/rules.d/70-slimbook-rgb.rules <<'EOF'
+# ITE 8291 RGB keyboard — allow non-root access for Slimbook RGB app
+SUBSYSTEM=="usb", ATTRS{idVendor}=="048d", MODE="0666", GROUP="input"
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="048d", MODE="0666", GROUP="input"
+
+# Also cover ITE devices exposed as hidraw without USB parent match
+KERNEL=="hidraw*", ATTRS{idVendor}=="048d", MODE="0666", GROUP="input"
+EOF
+
+# qc71 sysfs interface — allow wheel group to write fan/perf mode without sudo
+# The qc71_laptop module exposes controls under /sys/devices/platform/qc71_laptop/
+cat > /etc/udev/rules.d/71-slimbook-qc71.rules <<'EOF'
+# qc71_laptop platform device — fan boost, silent mode, turbo mode, fn-lock
+SUBSYSTEM=="platform", KERNEL=="qc71_laptop", RUN+="/bin/chmod -R a+rw /sys/devices/platform/qc71_laptop/"
+EOF
+
+echo "::endgroup::"
+
 echo "::group:: System Configuration"
 
 # Enable/disable systemd services
