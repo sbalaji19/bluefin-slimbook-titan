@@ -48,7 +48,11 @@ dnf install -y \
     git \
     unzip \
     curl \
-    dconf
+    dconf \
+    python3-pip
+
+# ite8291r3-ctl — userspace RGB control for ITE 8291 keyboard (048d:6004)
+pip3 install ite8291r3-ctl
 
 echo "::endgroup::"
 
