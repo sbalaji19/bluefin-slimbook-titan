@@ -43,11 +43,22 @@ echo "::endgroup::"
 
 echo "::group:: Install Packages"
 
-# Install packages using dnf5
-# Example: dnf5 install -y tmux
+# Add Slimbook OBS repository
+dnf config-manager addrepo \
+    --from-repofile=https://download.opensuse.org/repositories/home:/Slimbook/Fedora_$(rpm -E %fedora)/home:Slimbook.repo
 
-# Example using COPR with isolated pattern:
-# copr_install_isolated "ublue-os/staging" package-name
+# Install Slimbook Titan hardware packages
+# --setopt=tsflags=noscripts skips post-install compile scripts —
+# akmod modules are built separately in Containerfile RUN layers
+dnf install -y --setopt=tsflags=noscripts \
+    slimbook-meta-common \
+    slimbook-meta-titan \
+    slimbook-meta-gnome \
+    slimbook-service \
+    slimbook-qc71-kmod \
+    slimbook-qc71-kmod-common \
+    slimbook-yt6801-kmod \
+    slimbook-yt6801-kmod-common
 
 echo "::endgroup::"
 

@@ -44,15 +44,14 @@ COPY custom /custom
 COPY --from=ghcr.io/projectbluefin/common:latest@sha256:b8fe93b16674a547b4cf38493af19caa484d9575956fc3be04ca3d10faec23ff /system_files /oci/common
 COPY --from=ghcr.io/ublue-os/brew:latest@sha256:ca91068f51ce663d495ccfc829352d6621ec95f6c7db447ade55023b222f9762 /system_files /oci/brew
 
-# Base Image - GNOME included
-FROM ghcr.io/ublue-os/silverblue-main:latest@sha256:f8d5fd28aa7bb0ed9e17e98e4f9fb174b6961a2dc4a3113b78c5dff4af5bdf6f
+# Base Image - Bluefin DX + NVIDIA open drivers, Fedora 43
+FROM ghcr.io/ublue-os/bluefin-dx-nvidia-open:43
 
-## Alternative base images, no desktop included (uncomment to use):
-# FROM ghcr.io/ublue-os/base-main:latest    
-# FROM quay.io/centos-bootc/centos-bootc:stream10
-
-## Alternative GNOME OS base image (uncomment to use):
-# FROM quay.io/gnome_infrastructure/gnome-build-meta:gnomeos-nightly
+## Alternative base images (uncomment to use):
+# FROM ghcr.io/ublue-os/bluefin-dx-nvidia-open:stable  (tracks latest stable Fedora)
+# FROM ghcr.io/ublue-os/bluefin-dx-nvidia:43            (proprietary NVIDIA, older cards)
+# FROM ghcr.io/ublue-os/bluefin-dx:43                   (no NVIDIA)
+# FROM ghcr.io/ublue-os/bluefin:43                      (no DX, no NVIDIA)
 
 ### /opt
 ## Some bootable images, like Fedora, have /opt symlinked to /var/opt, in order to
@@ -82,6 +81,36 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     /ctx/build/10-build.sh
     
+### SLIMBOOK TITAN HARDWARE SUPPORT
+## Kernel modules must be compiled here (not in build scripts) because:
+## - Bluefin ships a stub kernel-devel (RPM registered but no actual header files)
+## - akmods refuses to build as root — requires su to akmods user
+## - Each step must be a separate RUN layer for correct isolation
+
+# Step 1: Replace stub kernel-devel with real one (provides /usr/src/kernels/)
+RUN KVER=$(rpm -qa kernel --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}') && \
+    echo "Building for kernel: ${KVER}" && \
+    rpm -e --nodeps kernel-devel-${KVER} || true && \
+    dnf install -y kernel-devel-${KVER} && \
+    ls /usr/src/kernels/
+
+# Step 2: Build slimbook-qc71 kernel module (fan control, lightbar, performance modes)
+RUN KVER=$(rpm -qa kernel --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}') && \
+    chmod 1777 /tmp && \
+    mkdir -p /var/lib/akmods && chown akmods:akmods /var/lib/akmods && \
+    SRPM=$(ls /usr/src/akmods/slimbook-qc71-kmod-*.src.rpm) && \
+    su -s /bin/bash akmods -c "cd /var/lib/akmods && HOME=/var/lib/akmods akmodsbuild --target $(uname -m) --kernels ${KVER} ${SRPM}" && \
+    dnf install -y /var/lib/akmods/kmod-slimbook-qc71-${KVER}-*.rpm
+
+# Step 3: Build slimbook-yt6801 kernel module (Ethernet driver)
+RUN KVER=$(rpm -qa kernel --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}') && \
+    SRPM=$(ls /usr/src/akmods/slimbook-yt6801-kmod-*.src.rpm) && \
+    su -s /bin/bash akmods -c "cd /var/lib/akmods && HOME=/var/lib/akmods akmodsbuild --target $(uname -m) --kernels ${KVER} ${SRPM}" && \
+    dnf install -y /var/lib/akmods/kmod-slimbook-yt6801-${KVER}-*.rpm
+
+# Step 4: Cleanup — modules compiled, headers no longer needed
+RUN dnf remove -y kernel-devel && dnf clean all
+
 ### LINTING
 ## Verify final image and contents are correct.
 RUN bootc container lint
