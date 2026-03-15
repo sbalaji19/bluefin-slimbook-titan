@@ -43,11 +43,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Patch iso.toml with correct image URL
+      - name: Patch iso.toml with correct image URL and merge disk config
         run: |
           IMAGE_URL="${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:stable"
           sed -i "s|ghcr.io/USERNAME/REPO:stable|${IMAGE_URL}|g" iso/iso.toml
+          # Merge disk.toml filesystem config into iso.toml
+          cat iso/disk.toml >> iso/iso.toml
           echo "Using image: ${IMAGE_URL}"
+          cat iso/iso.toml
 
       - name: Build ISO with bootc-image-builder
         run: |
@@ -58,13 +61,11 @@ jobs:
             --pull=newer \
             --security-opt label=type:unconfined_t \
             -v ./iso/iso.toml:/config.toml:ro \
-            -v ./iso/disk.toml:/disk.toml:ro \
             -v ./output:/output \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             ghcr.io/osbuild/bootc-image-builder:latest \
             --type anaconda-iso \
             --config /config.toml \
-            --filesystem-config /disk.toml \
             ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:stable
 
       - name: Rename ISO
