@@ -173,12 +173,10 @@ mkdir -p /etc/udev/rules.d
 # Allows users in the 'input' and 'wheel' groups to access the HID device directly
 # ITE USB vendor ID: 048d — common product IDs for keyboard RGB controllers
 cat > /etc/udev/rules.d/70-slimbook-rgb.rules <<'EOF'
-# ITE 8291 RGB keyboard — allow non-root access for Slimbook RGB app
-SUBSYSTEM=="usb", ATTRS{idVendor}=="048d", MODE="0666", GROUP="input"
-SUBSYSTEM=="hidraw", ATTRS{idVendor}=="048d", MODE="0666", GROUP="input"
-
-# Also cover ITE devices exposed as hidraw without USB parent match
-KERNEL=="hidraw*", ATTRS{idVendor}=="048d", MODE="0666", GROUP="input"
+# ITE 8291 RGB keyboard (048d:6004) — allow non-root access for Slimbook RGB app and ite8291r3-ctl
+SUBSYSTEM=="usb", ATTRS{idVendor}=="048d", ATTRS{idProduct}=="6004", MODE="0666", GROUP="input"
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="048d", ATTRS{idProduct}=="6004", MODE="0666", GROUP="input"
+KERNEL=="hidraw*", ATTRS{idVendor}=="048d", ATTRS{idProduct}=="6004", MODE="0666", GROUP="input"
 EOF
 
 # qc71 sysfs interface — allow wheel group to write fan/perf mode without sudo
