@@ -108,13 +108,7 @@ RUN KVER=$(rpm -qa kernel --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}') && \
     su -s /bin/bash akmods -c "cd /var/lib/akmods && HOME=/var/lib/akmods akmodsbuild --target $(uname -m) --kernels ${KVER} ${SRPM}" && \
     dnf install -y /var/lib/akmods/kmod-slimbook-yt6801-${KVER}-*.rpm
 
-# Step 4: Build slimbook-ite8291 kernel module (RGB keyboard backlight — ITE 8291 controller)
-RUN KVER=$(rpm -qa kernel --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}') && \
-    SRPM=$(ls /usr/src/akmods/slimbook-ite8291-kmod-*.src.rpm) && \
-    su -s /bin/bash akmods -c "cd /var/lib/akmods && HOME=/var/lib/akmods akmodsbuild --target $(uname -m) --kernels ${KVER} ${SRPM}" && \
-    dnf install -y /var/lib/akmods/kmod-slimbook-ite8291-${KVER}-*.rpm
-
-# Step 5: Cleanup — modules compiled, headers no longer needed
+# Step 4: Cleanup — modules compiled, headers no longer needed
 RUN dnf remove -y kernel-devel && dnf clean all
 
 ### SLIMBOOK GRUB THEME

@@ -69,9 +69,7 @@ dnf install -y --setopt=tsflags=noscripts \
     slimbook-qc71-kmod \
     slimbook-qc71-kmod-common \
     slimbook-yt6801-kmod \
-    slimbook-yt6801-kmod-common \
-    slimbook-ite8291-kmod \
-    slimbook-ite8291-kmod-common
+    slimbook-yt6801-kmod-common
 
 # Install Slimbook GUI applications (provides icons + desktop entries)
 # Use individual installs so one missing package doesn't block the rest
