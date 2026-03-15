@@ -52,6 +52,10 @@ jobs:
           echo "Using image: ${IMAGE_URL}"
           cat iso/iso.toml
 
+      - name: Pull image before ISO build
+        run: |
+          sudo podman pull ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:stable
+
       - name: Build ISO with bootc-image-builder
         run: |
           mkdir -p output
@@ -69,16 +73,17 @@ jobs:
             ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:stable
 
       - name: Rename ISO
+        id: rename
         run: |
           DATE=$(date +%Y%m%d)
           mv output/bootiso/install.iso output/bootiso/bluefin-slimbook-titan-${DATE}.iso
           sha256sum output/bootiso/bluefin-slimbook-titan-${DATE}.iso > output/bootiso/bluefin-slimbook-titan-${DATE}.iso.sha256
-          echo "ISO_NAME=bluefin-slimbook-titan-${DATE}.iso" >> ${GITHUB_ENV}
+          echo "iso_name=bluefin-slimbook-titan-${DATE}.iso" >> ${GITHUB_OUTPUT}
 
       - name: Upload ISO as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ISO_NAME }}
+          name: ${{ steps.rename.outputs.iso_name }}
           path: |
             output/bootiso/*.iso
             output/bootiso/*.sha256
