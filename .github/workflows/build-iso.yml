@@ -77,8 +77,9 @@ jobs:
         id: rename
         run: |
           DATE=$(date +%Y%m%d)
-          mv output/bootiso/install.iso output/bootiso/bluefin-slimbook-titan-${DATE}.iso
-          sha256sum output/bootiso/bluefin-slimbook-titan-${DATE}.iso > output/bootiso/bluefin-slimbook-titan-${DATE}.iso.sha256
+          sudo mv output/bootiso/install.iso output/bootiso/bluefin-slimbook-titan-${DATE}.iso
+          sudo sha256sum output/bootiso/bluefin-slimbook-titan-${DATE}.iso > output/bootiso/bluefin-slimbook-titan-${DATE}.iso.sha256
+          sudo chmod 644 output/bootiso/bluefin-slimbook-titan-${DATE}.iso output/bootiso/bluefin-slimbook-titan-${DATE}.iso.sha256
           echo "iso_name=bluefin-slimbook-titan-${DATE}.iso" >> ${GITHUB_OUTPUT}
 
       - name: Upload ISO as artifact
