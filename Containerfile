@@ -115,8 +115,12 @@ RUN dnf remove -y kernel-devel && dnf clean all
 ## Official Slimbook GRUB theme from github.com/Slimbook-Team/slimbook-grub
 ## Theme files must be pre-downloaded into custom/grub/themes/slimbook/
 COPY custom/grub/themes/slimbook /usr/share/grub/themes/slimbook
-RUN sed -i 's|^#\?GRUB_THEME=.*|GRUB_THEME="/usr/share/grub/themes/slimbook/theme.txt"|' /etc/default/grub && \
-    sed -i 's|^#\?GRUB_GFXMODE=.*|GRUB_GFXMODE=2560x1440x32|' /etc/default/grub
+RUN mkdir -p /etc/default && \
+    touch /etc/default/grub && \
+    sed -i '/^GRUB_THEME=/d' /etc/default/grub && \
+    sed -i '/^GRUB_GFXMODE=/d' /etc/default/grub && \
+    echo 'GRUB_THEME="/usr/share/grub/themes/slimbook/theme.txt"' >> /etc/default/grub && \
+    echo 'GRUB_GFXMODE=2560x1440x32' >> /etc/default/grub
 
 ### LINTING
 ## Verify final image and contents are correct.
