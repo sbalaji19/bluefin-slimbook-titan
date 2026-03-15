@@ -112,15 +112,10 @@ RUN KVER=$(rpm -qa kernel --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}') && \
 RUN dnf remove -y kernel-devel && dnf clean all
 
 ### SLIMBOOK GRUB THEME
-## Official Slimbook GRUB theme from github.com/Slimbook-Team/slimbook-grub
-## Theme files must be pre-downloaded into custom/grub/themes/slimbook/
+## Theme files are baked into the image at /usr/share/grub/themes/slimbook
+## The grub-theme-apply.service (enabled in build script) copies them to /boot
+## and runs grub2-mkconfig on every boot with UEFI/BIOS auto-detection
 COPY custom/grub/themes/slimbook /usr/share/grub/themes/slimbook
-RUN mkdir -p /etc/default && \
-    touch /etc/default/grub && \
-    sed -i '/^GRUB_THEME=/d' /etc/default/grub && \
-    sed -i '/^GRUB_GFXMODE=/d' /etc/default/grub && \
-    echo 'GRUB_THEME="/usr/share/grub/themes/slimbook/theme.txt"' >> /etc/default/grub && \
-    echo 'GRUB_GFXMODE=2560x1440x32' >> /etc/default/grub
 
 ### LINTING
 ## Verify final image and contents are correct.

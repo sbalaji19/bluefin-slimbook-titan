@@ -107,6 +107,7 @@ cp -r /ctx/custom/gnome-shell/themes/SlimbookTitan/gnome-shell/* \
     /usr/share/themes/SlimbookTitan/gnome-shell/
 
 # Set icon theme + shell theme system-wide via dconf profile
+# NOTE: Do NOT set enabled-extensions here — it would overwrite Bluefin's default extensions
 mkdir -p /etc/dconf/db/local.d /etc/dconf/profile
 cat > /etc/dconf/profile/user <<EOF
 user-db:user
@@ -118,9 +119,6 @@ icon-theme='Reversal-dark'
 
 [org/gnome/shell/extensions/user-theme]
 name='SlimbookTitan'
-
-[org/gnome/shell]
-enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com']
 EOF
 dconf update
 
@@ -149,18 +147,32 @@ echo "::group:: System Configuration"
 # Enable/disable systemd services
 systemctl enable podman.socket
 
-# GRUB theme auto-apply service — runs grub2-mkconfig after every bootc deployment
-# This is needed because bootc does not re-run grub2-mkconfig after image switch/upgrade
-cat > /usr/lib/systemd/system/grub-theme-apply.service <<EOF
+# GRUB theme apply service
+# - Copies theme files from /usr/share (rootfs) to /boot (boot partition, readable by GRUB)
+# - Detects UEFI vs BIOS and writes grub.cfg to the correct path
+# - Runs on every boot so upgrades via bootc upgrade keep the theme
+cat > /usr/lib/systemd/system/grub-theme-apply.service <<'EOF'
 [Unit]
-Description=Apply GRUB theme configuration
+Description=Apply Slimbook GRUB theme
 After=local-fs.target
-ConditionPathExists=/etc/default/grub
+ConditionPathExists=/usr/share/grub/themes/slimbook/theme.txt
 
 [Service]
 Type=oneshot
-ExecStart=/usr/sbin/grub2-mkconfig -o /boot/grub2/grub.cfg
 RemainAfterExit=yes
+ExecStart=/bin/bash -c '\
+  mkdir -p /boot/grub2/themes && \
+  cp -r /usr/share/grub/themes/slimbook /boot/grub2/themes/slimbook && \
+  sed -i "/^GRUB_THEME=/d" /etc/default/grub && \
+  sed -i "/^GRUB_GFXMODE=/d" /etc/default/grub && \
+  echo "GRUB_THEME=/boot/grub2/themes/slimbook/theme.txt" >> /etc/default/grub && \
+  echo "GRUB_GFXMODE=2560x1440x32" >> /etc/default/grub && \
+  if [ -d /sys/firmware/efi ]; then \
+    EFI_CFG=$(find /boot/efi/EFI -name grub.cfg 2>/dev/null | head -1) && \
+    [ -n "$EFI_CFG" ] && grub2-mkconfig -o "$EFI_CFG" || grub2-mkconfig -o /boot/grub2/grub.cfg; \
+  else \
+    grub2-mkconfig -o /boot/grub2/grub.cfg; \
+  fi'
 StandardOutput=journal
 
 [Install]
