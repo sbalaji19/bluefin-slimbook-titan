@@ -133,6 +133,62 @@ curl -L "${EXTENSION_URL}" -o /tmp/${EXTENSION_UUID}.zip
 unzip -o /tmp/${EXTENSION_UUID}.zip -d /usr/share/gnome-shell/extensions/${EXTENSION_UUID}
 rm -f /tmp/${EXTENSION_UUID}.zip
 
+# Enable P7 extension by merging it into the existing enabled-extensions list.
+# We read from both gschema override files (compiled GSettings defaults) and dconf
+# db source files so we don't wipe out Bluefin's pre-configured extensions.
+python3 - <<'PYEOF'
+import re, glob, os, sys
+
+P7_UUID = "p7-borders@prasannavl.com"
+extensions = []
+
+# Step 1: read gschema overrides — sorted alphabetically, last file wins per key
+for path in sorted(glob.glob('/usr/share/glib-2.0/schemas/*.gschema.override')):
+    try:
+        content = open(path).read()
+        m = re.search(
+            r'^\[org\.gnome\.shell\].*?^enabled-extensions\s*=\s*(\[[^\]]*\])',
+            content, re.MULTILINE | re.DOTALL
+        )
+        if m:
+            extensions = re.findall(r"'([^']+)'", m.group(1))
+    except Exception as e:
+        print(f"Warning: {path}: {e}", file=sys.stderr)
+
+# Step 2: dconf db source files can override the gschema defaults
+for path in sorted(glob.glob('/etc/dconf/db/local.d/*')):
+    try:
+        content = open(path).read()
+        m = re.search(r'enabled-extensions\s*=\s*(\[[^\]]*\])', content)
+        if m:
+            extensions = re.findall(r"'([^']+)'", m.group(1))
+    except Exception as e:
+        print(f"Warning: {path}: {e}", file=sys.stderr)
+
+# Step 3: append our extension if not already present
+if P7_UUID not in extensions:
+    extensions.append(P7_UUID)
+
+arr = "[" + ", ".join(f"'{e}'" for e in extensions) + "]"
+
+# Write highest-priority gschema override so it wins regardless of Bluefin's numbering
+os.makedirs('/usr/share/glib-2.0/schemas', exist_ok=True)
+with open('/usr/share/glib-2.0/schemas/99-slimbook-extensions.gschema.override', 'w') as f:
+    f.write(f'[org.gnome.shell]\nenabled-extensions={arr}\n')
+
+# Also write a dconf db entry — dconf takes priority over GSettings defaults
+os.makedirs('/etc/dconf/db/local.d', exist_ok=True)
+with open('/etc/dconf/db/local.d/02-slimbook-extensions', 'w') as f:
+    f.write(f'[org/gnome/shell]\nenabled-extensions={arr}\n')
+
+print(f"Extensions enabled: {extensions}")
+PYEOF
+
+# Recompile GLib schemas (picks up the new gschema override)
+glib-compile-schemas /usr/share/glib-2.0/schemas/
+# Recompile dconf database
+dconf update
+
 echo "::endgroup::"
 
 echo "::group:: Polkit Rules"

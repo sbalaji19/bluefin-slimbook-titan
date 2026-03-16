@@ -1,7 +1,13 @@
 ---
-name: Build ISO Installer
+name: Build disk images
 on:
-  workflow_dispatch:  # Manual trigger only
+  workflow_dispatch:
+    inputs:
+      upload-to-s3:
+        description: "Upload to S3"
+        required: false
+        default: false
+        type: boolean
   workflow_run:
     workflows: ["Build container image"]
     branches: [main]
@@ -10,23 +16,39 @@ on:
 env:
   IMAGE_NAME: "${{ github.event.repository.name }}"
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
+  DEFAULT_TAG: "stable"
+  BIB_IMAGE: "quay.io/centos-bootc/bootc-image-builder:latest"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
-  build-iso:
-    name: Build ISO
+  build:
+    name: Build ${{ matrix.disk-type }}
     runs-on: ubuntu-24.04
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
+    strategy:
+      fail-fast: false
+      matrix:
+        # anaconda-iso: guided installer (disk selection only — GNOME Initial Setup handles the rest)
+        # live-iso: boots directly into the full Slimbook Titan GNOME desktop
+        disk-type: ["anaconda-iso", "live-iso"]
+
     permissions:
-      contents: write
+      contents: read
       packages: read
       id-token: write
 
     steps:
       - name: Prepare environment
+        id: prep
         run: |
           echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
           echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
+          echo "user-uid=$(id -u)" >> ${GITHUB_OUTPUT}
+          echo "user-gid=$(id -g)" >> ${GITHUB_OUTPUT}
 
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -43,51 +65,46 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Patch iso.toml with correct image URL and merge disk config
+      - name: Patch iso.toml with correct image URL
+        if: matrix.disk-type == 'anaconda-iso'
         run: |
-          IMAGE_URL="${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:stable"
+          IMAGE_URL="${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           sed -i "s|ghcr.io/USERNAME/REPO:stable|${IMAGE_URL}|g" iso/iso.toml
-          # Merge disk.toml filesystem config into iso.toml
-          cat iso/disk.toml >> iso/iso.toml
           echo "Using image: ${IMAGE_URL}"
-          cat iso/iso.toml
 
-      - name: Pull image before ISO build
-        run: |
-          sudo podman pull ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:stable
+      - name: Build disk image
+        id: build
+        uses: osbuild/bootc-image-builder-action@main
+        with:
+          builder-image: ${{ env.BIB_IMAGE }}
+          config-file: ${{ matrix.disk-type == 'anaconda-iso' && './iso/iso.toml' || './iso/disk.toml' }}
+          image: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}
+          chown: ${{ steps.prep.outputs.user-uid }}:${{ steps.prep.outputs.user-gid }}
+          types: ${{ matrix.disk-type }}
+          additional-args: --use-librepo=True
 
-      - name: Build ISO with bootc-image-builder
-        run: |
-          mkdir -p output
-          sudo podman run \
-            --rm \
-            --privileged \
-            --pull=newer \
-            --security-opt label=type:unconfined_t \
-            -v ./iso/iso.toml:/config.toml:ro \
-            -v ./output:/output \
-            -v /var/lib/containers/storage:/var/lib/containers/storage \
-            ghcr.io/osbuild/bootc-image-builder:latest \
-            --type anaconda-iso \
-            --rootfs btrfs \
-            --config /config.toml \
-            ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:stable
-
-      - name: Rename ISO
-        id: rename
-        run: |
-          DATE=$(date +%Y%m%d)
-          sudo mv output/bootiso/install.iso output/bootiso/bluefin-slimbook-titan-${DATE}.iso
-          sudo chmod 644 output/bootiso/bluefin-slimbook-titan-${DATE}.iso
-          sudo sha256sum output/bootiso/bluefin-slimbook-titan-${DATE}.iso | sudo tee output/bootiso/bluefin-slimbook-titan-${DATE}.iso.sha256
-          sudo chmod 644 output/bootiso/bluefin-slimbook-titan-${DATE}.iso.sha256
-          echo "iso_name=bluefin-slimbook-titan-${DATE}.iso" >> ${GITHUB_OUTPUT}
-
-      - name: Upload ISO as artifact
+      - name: Upload disk image as artifact
+        if: inputs.upload-to-s3 != true
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.rename.outputs.iso_name }}
-          path: |
-            output/bootiso/*.iso
-            output/bootiso/*.sha256
+          name: bluefin-slimbook-titan-${{ matrix.disk-type }}-${{ github.run_id }}
+          path: ${{ steps.build.outputs.output-directory }}
+          if-no-files-found: error
           retention-days: 7
+          compression-level: 0
+
+      - name: Upload to S3
+        if: inputs.upload-to-s3 == true
+        shell: bash
+        env:
+          RCLONE_CONFIG_S3_TYPE: s3
+          RCLONE_CONFIG_S3_PROVIDER: ${{ secrets.S3_PROVIDER }}
+          RCLONE_CONFIG_S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_S3_REGION: ${{ secrets.S3_REGION }}
+          RCLONE_CONFIG_S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          SOURCE_DIR: ${{ steps.build.outputs.output-directory }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rclone
+          rclone copy "$SOURCE_DIR" S3:${{ secrets.S3_BUCKET_NAME }}

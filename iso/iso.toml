@@ -3,6 +3,16 @@
 #
 # The installer will guide users through disk partitioning and basic system setup,
 # then automatically switch to your custom image on first boot.
+#
+# NOTE — Installer GUI version:
+# bootc-image-builder (BIB) is internally based on CentOS Stream and bundles its own
+# Anaconda installer runtime. This means the ISO will show the older Qt-based Anaconda UI,
+# not the new Fedora 43 WebUI, regardless of the target image's Fedora version.
+# This is a BIB upstream limitation — the installer UI comes from BIB itself, not your image.
+#
+# Workaround: Use the live-iso build job instead. It boots directly into your full
+# Fedora 43 GNOME desktop with all customizations visible, and users can install
+# from the live session via GNOME's installer or `bootc install` commands.
 
 [customizations.installer.kickstart]
 contents = """
@@ -14,18 +24,20 @@ bootc switch --mutate-in-place --transport registry ghcr.io/USERNAME/REPO:stable
 """
 
 [customizations.installer.modules]
-# Enable standard Anaconda installer modules for a guided installation experience
+# Minimal GNOME installer config — matches upstream ublue-os/image-template iso-gnome.toml.
+# Only Storage (disk partitioning) and Runtime (basic setup) are needed.
+# All other setup — user account, timezone, network, security — is handled by
+# GNOME Initial Setup on first boot, which is the standard Bluefin/GNOME experience.
 enable = [
   "org.fedoraproject.Anaconda.Modules.Storage",    # Disk partitioning and formatting
-  "org.fedoraproject.Anaconda.Modules.Runtime",    # Basic runtime configuration  
-  "org.fedoraproject.Anaconda.Modules.Network",    # Network configuration
-  "org.fedoraproject.Anaconda.Modules.Security",   # Security settings
-  "org.fedoraproject.Anaconda.Modules.Services",   # System services
-  "org.fedoraproject.Anaconda.Modules.Users",      # User account creation
-  "org.fedoraproject.Anaconda.Modules.Timezone"    # Timezone selection
+  "org.fedoraproject.Anaconda.Modules.Runtime",    # Basic runtime configuration
 ]
 
-# Disable subscription management (not needed for community images)
 disable = [
+  "org.fedoraproject.Anaconda.Modules.Network",
+  "org.fedoraproject.Anaconda.Modules.Security",
+  "org.fedoraproject.Anaconda.Modules.Services",
+  "org.fedoraproject.Anaconda.Modules.Users",
   "org.fedoraproject.Anaconda.Modules.Subscription",
+  "org.fedoraproject.Anaconda.Modules.Timezone",
 ]
