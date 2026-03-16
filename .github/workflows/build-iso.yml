@@ -34,7 +34,7 @@ jobs:
       matrix:
         # anaconda-iso: guided installer (disk selection only — GNOME Initial Setup handles the rest)
         # live-iso: boots directly into the full Slimbook Titan GNOME desktop
-        disk-type: ["anaconda-iso", "live-iso"]
+        disk-type: ["anaconda-iso", "iso"]
 
     permissions:
       contents: read
