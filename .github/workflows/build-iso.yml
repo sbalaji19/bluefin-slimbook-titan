@@ -81,7 +81,7 @@ jobs:
           image: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}
           chown: ${{ steps.prep.outputs.user-uid }}:${{ steps.prep.outputs.user-gid }}
           types: ${{ matrix.disk-type }}
-          additional-args: --use-librepo=True
+          additional-args: --use-librepo=True --rootfs=btrfs
 
       - name: Upload disk image as artifact
         if: inputs.upload-to-s3 != true
