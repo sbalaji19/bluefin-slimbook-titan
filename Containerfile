@@ -45,7 +45,7 @@ COPY --from=ghcr.io/projectbluefin/common:latest@sha256:b8fe93b16674a547b4cf3849
 COPY --from=ghcr.io/ublue-os/brew:latest@sha256:ca91068f51ce663d495ccfc829352d6621ec95f6c7db447ade55023b222f9762 /system_files /oci/brew
 
 # Base Image - Bluefin DX + NVIDIA open drivers, Fedora 43
-FROM ghcr.io/ublue-os/bluefin-dx-nvidia-open:43
+FROM ghcr.io/ublue-os/bluefin-dx-nvidia-open:44@sha256:ad1cbad1f3b285ec4c8310c3a99979c6e69dbbb2370a1a1593b96b0f522cb5cf
 
 ## Alternative base images (uncomment to use):
 # FROM ghcr.io/ublue-os/bluefin-dx-nvidia-open:stable  (tracks latest stable Fedora)
